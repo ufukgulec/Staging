@@ -1,0 +1,34 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches:
+      - Staging
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.GH_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: SSH into Server and Staging
+        run: |
+          sshpass -p "${{ secrets.SERVER_PASSWORD }}" ssh -o StrictHostKeyChecking=no -p 22 ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+            set -e  # Hata olursa işlemi durdur
+            echo "Sunucuya bağlanıldı. Deployment başlatılıyor..."
+            cd ${{ secrets.STAGING_PROJECT_PATH }}
+            git pull origin main
+            docker stop c_envoriment_staging || true
+            docker rm c_envoriment_staging || true
+            docker rmi i_envoriment_staging:latest || true
+            docker build -t i_envoriment_staging:latest .
+            docker run -d --name c_envoriment_staging -p 1453:8080 -p 1454:8081 i_envoriment_staging:latest
+            echo "Deployment başarılı!"
+          EOF
