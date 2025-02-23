@@ -29,6 +29,6 @@ jobs:
             docker rm c_newapp || true
             docker rmi i_newapp:latest || true
             docker build -t i_newapp:latest .
-            docker run -d --name c_newapp -p 1522:80 i_newapp:latest
+            docker run -d --name c_newapp -p 1453:8080 -p 1454:8081 i_newapp:latest
             echo "Deployment başarılı!"
           EOF
