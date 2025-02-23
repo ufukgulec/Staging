@@ -25,6 +25,15 @@ namespace Staging.Controllers
                 ConnectionString = _config.GetConnectionString("DefaultConnection")
             });
         }
+        [HttpGet("hello")]
+        public IActionResult Hello()
+        {
+            return Ok(new
+            {
+                Environment = _env.EnvironmentName,
+                ConnectionString = _config.GetConnectionString("DefaultConnection")
+            });
+        }
     }
 
 }
