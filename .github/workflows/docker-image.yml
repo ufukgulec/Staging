@@ -1,0 +1,37 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - main  # veya production için farklı bir branch kullanabilirsiniz
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: SSH into Server and Deploy
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            # Sunucudaki proje dizinine git
+            cd ${{ secrets.SERVER_PROJECT_PATH }}
+
+            # En son kodları çek
+            git pull origin main
+
+            # Yeni Docker image'ı oluştur
+            docker build -t i_newapp:latest .
+
+            # Çalışan container'ı durdur ve kaldır (varsa)
+            docker stop c_newapp || true
+            docker rm c_newapp || true
+
+            # Yeni container'ı başlat
+            docker run -d --name c_newapp -p 80:8080 i_newapp:latest
