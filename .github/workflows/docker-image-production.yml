@@ -1,0 +1,34 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.GH_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: SSH into Deploy to Production
+        run: |
+          sshpass -p "${{ secrets.SERVER_PASSWORD }}" ssh -o StrictHostKeyChecking=no -p 22 ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+            set -e  # Hata olursa işlemi durdur
+            echo "Sunucuya bağlanıldı. Deployment başlatılıyor..."
+            cd ${{ secrets.STAGING_PROJECT_PATH }}
+            git pull origin main
+            docker stop c_envoriment_production || true
+            docker rm c_envoriment_production || true
+            docker rmi i_envoriment_production:latest || true
+            docker build -t i_envoriment_production:latest .
+            docker run -d --env ASPNETCORE_ENVIRONMENT=Production --name c_envoriment_production -p 1455:8080 -p 1456:8081 i_envoriment_production:latest
+            echo "Deployment başarılı!"
+          EOF
