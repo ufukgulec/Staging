@@ -3,7 +3,7 @@ name: Deploy to Server
 on:
   push:
     branches:
-      - main  # veya production için farklı bir branch kullanabilirsiniz
+      - main
 
 jobs:
   deploy:
@@ -13,25 +13,16 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
+      - name: Install sshpass
+        run: sudo apt-get install -y sshpass
+
       - name: SSH into Server and Deploy
-        uses: appleboy/ssh-action@v0.1.6
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          script: |
-            # Sunucudaki proje dizinine git
+        run: |
+          sshpass -p "${{ secrets.SERVER_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << EOF
             cd ${{ secrets.SERVER_PROJECT_PATH }}
-
-            # En son kodları çek
             git pull origin main
-
-            # Yeni Docker image'ı oluştur
             docker build -t i_newapp:latest .
-
-            # Çalışan container'ı durdur ve kaldır (varsa)
             docker stop c_newapp || true
             docker rm c_newapp || true
-
-            # Yeni container'ı başlat
-            docker run -d --name c_newapp -p 80:8080 i_newapp:latest
+            docker run -d --name c_newapp -p 1522:80 i_newapp:latest
+          EOF
