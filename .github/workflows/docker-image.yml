@@ -3,7 +3,7 @@ name: Deploy to Server
 on:
   push:
     branches:
-      - main
+      - Staging
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -23,12 +23,12 @@ jobs:
           sshpass -p "${{ secrets.SERVER_PASSWORD }}" ssh -o StrictHostKeyChecking=no -p 22 ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
             set -e  # Hata olursa işlemi durdur
             echo "Sunucuya bağlanıldı. Deployment başlatılıyor..."
-            cd ${{ secrets.SERVER_PROJECT_PATH }}
+            cd ${{ secrets.STAGING_PROJECT_PATH }}
             git pull origin main
-            docker stop c_newapp || true
-            docker rm c_newapp || true
-            docker rmi i_newapp:latest || true
-            docker build -t i_newapp:latest .
-            docker run -d --name c_newapp -p 1453:8080 -p 1454:8081 i_newapp:latest
+            docker stop c_envoriment_staging || true
+            docker rm c_envoriment_staging || true
+            docker rmi i_envoriment_staging:latest || true
+            docker build -t i_envoriment_staging:latest .
+            docker run -d --name c_envoriment_staging -p 1453:8080 -p 1454:8081 i_envoriment_staging:latest
             echo "Deployment başarılı!"
           EOF
