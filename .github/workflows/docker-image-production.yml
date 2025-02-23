@@ -29,6 +29,7 @@ jobs:
             docker rm c_envoriment_production || true
             docker rmi i_envoriment_production:latest || true
             docker build -t i_envoriment_production:latest .
+            echo "Image başarılı!"
             docker run -d --env ASPNETCORE_ENVIRONMENT=Production --name c_envoriment_production -p 1455:8080 -p 1456:8081 i_envoriment_production:latest
             echo "Deployment başarılı!"
           EOF
