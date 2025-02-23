@@ -29,6 +29,6 @@ jobs:
             docker rm c_envoriment_staging || true
             docker rmi i_envoriment_staging:latest || true
             docker build -t i_envoriment_staging:latest .
-            docker run -d --name c_envoriment_staging -p 1453:8080 -p 1454:8081 i_envoriment_staging:latest
+            docker run -d --env ASPNETCORE_ENVIRONMENT=Staging --name c_envoriment_staging -p 1453:8080 -p 1454:8081 i_envoriment_staging:latest
             echo "Deployment başarılı!"
           EOF
