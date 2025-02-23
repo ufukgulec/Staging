@@ -3,7 +3,7 @@ name: Deploy to Server
 on:
   push:
     branches:
-      - main
+      - main  # Yalnızca "main" branch'e push yapıldığında çalışır
 
 jobs:
   deploy:
@@ -18,11 +18,29 @@ jobs:
 
       - name: SSH into Server and Deploy
         run: |
-          sshpass -p "${{ secrets.SERVER_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << EOF
+          sshpass -p "${{ secrets.SERVER_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+            set -e  # Hata olursa işlemi durdur
+
+            echo "Sunucuya bağlanıldı. Deployment başlatılıyor..."
+            
+            # Proje klasörüne git
             cd ${{ secrets.SERVER_PROJECT_PATH }}
+            
+            # En güncel kodları çek
             git pull origin main
-            docker build -t i_newapp:latest .
+            
+            # Eski container'ı durdur ve sil (varsa)
             docker stop c_newapp || true
             docker rm c_newapp || true
+
+            # Eski image'ı kaldır (önceki build'leri temizlemek için)
+            docker rmi i_newapp:latest || true
+
+            # Yeni Docker image'ı oluştur
+            docker build -t i_newapp:latest .
+            
+            # Yeni container'ı başlat
             docker run -d --name c_newapp -p 1522:80 i_newapp:latest
+            
+            echo "Deployment başarılı!"
           EOF
