@@ -4,43 +4,31 @@ on:
   push:
     branches:
       - main
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Install sshpass
-        run: sudo apt-get install -y sshpass
+      - name: Set up SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.GH_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
 
       - name: SSH into Server and Deploy
         run: |
           sshpass -p "${{ secrets.SERVER_PASSWORD }}" ssh -o StrictHostKeyChecking=no -p 22 ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
             set -e  # Hata olursa işlemi durdur
-
             echo "Sunucuya bağlanıldı. Deployment başlatılıyor..."
-            
-            # Proje klasörüne git
             cd ${{ secrets.SERVER_PROJECT_PATH }}
-            
-            # En güncel kodları çek
             git pull origin main
-            
-            # Eski container'ı durdur ve sil (varsa)
             docker stop c_newapp || true
             docker rm c_newapp || true
-
-            # Eski image'ı kaldır (önceki build'leri temizlemek için)
             docker rmi i_newapp:latest || true
-
-            # Yeni Docker image'ı oluştur
             docker build -t i_newapp:latest .
-            
-            # Yeni container'ı başlat
             docker run -d --name c_newapp -p 1522:80 i_newapp:latest
-            
             echo "Deployment başarılı!"
           EOF
